@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>KaspaTaste Budget</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #d5e9ef;
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+    }
+    header {
+      background-color: #bcdce6;
+      padding: 12px;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #333;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    main {
+      padding: 12px;
+    }
+    .form-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    label {
+      width: 42%;
+      font-weight: bold;
+      color: #333;
+      white-space: nowrap;
+    }
+    select, input[type="text"] {
+      padding: 6px;
+      font-size: 0.85rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: white !important;
+    }
+    select.item-value {
+      width: 20%;
+    }
+    select.storage-label {
+      width: 42%;
+      font-size: 0.7rem;
+    }
+    .output-box {
+      min-width: 110px;
+      padding: 6px;
+      font-size: 0.85rem;
+      color: #000;
+      background-color: rgba(255, 255, 255, 0.4);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #totalStockBox {
+	min-width: 185px;
+      background-color: #FFF2CC !important;
+    }
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 30px;
+    }
+    .button-group button {
+      flex: 1 1 130px;
+      padding: 8px;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      font-weight: bold;
+      background-color: #f0f0f0;
+      border: 1px solid #aaa;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .button-group button:hover {
+      background-color: #e0e0e0;
+    }
+    .tight-group {
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>KaspaTaste Budget</header>
+  <main>
+    <div id="captureArea"></div>
+
+    <!-- Total Stock Display -->
+    <div class="form-group">
+      <label style="width: 42%; font-weight: bold; color: #333; font-size: 1rem;">Total Stock:</label>
+      <div class="output-box" id="totalStockBox">K0.00</div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="form-group button-group">
+      <button onclick="saveData()">💾 Save</button>
+      <button onclick="document.getElementById('loadFile').click()">📂 Load</button>
+      <button onclick="clearFields()">🧹 Clear All</button>
+      <button onclick="saveAsJPG()">📸 Save Image</button>
+      <input type="file" id="loadFile" accept=".json" style="display: none;" onchange="loadData(event)" />
+	  <button onclick="copyTextSummary()">📋 Copy Text</button>
+    </div>
+  </main>
+
+  <script>
+const captureArea = document.getElementById("captureArea");
+
+    const items = [
+      "chickensBought", "potatoesBought", "oniontomatoBought", "lettuceBought",
+      "cucumbersBought", "Transport",
+      "storageItem1", "storageItem2", "storageItem3", "storageItem4", "storageItem5", "storageItem6"
+    ];
+
+const unitPrices = {
+  chickensBought: 100,
+  potatoesBought: 160,
+  oniontomatoBought: 10,
+  lettuceBought: 12,
+  cucumbersBought: 10,
+  Transport: 10,
+  "Plain papers": 150,
+  "25kg Crown Flour": 585,
+  "1Kg Sugar": 40,
+  "Baking Powder": 100,
+  "5 Ltr Cooking Oil": 250,
+  "2 Ltr Tomatoe Sauce": 50,
+  "1 Ltr Masturd": 80,
+  "1 Ltr Vinegar": 20,
+  "2 Ltr Chili": 48,
+  "Chicken Spice 1kg": 90,
+  "Ginger Powder 1kg": 220,
+  "4 Orange Food Color": 25,
+  "Shawarma Spice 1kg": 130,
+  "Shawarma Papers": 45,
+  "Carrier Bags": 16,
+  "Boom/Soap": 20,
+  "Serviettes": 20,
+  "Plastic Gloves": 15,
+  "Fresh Garlic": 10,
+  Eggs: 70,
+  "Platter parks": 60,
+  "Salt Satchets": 50,
+  "Cooking Cylinder Gas": 225,
+  "Cooking Salt": 10,
+  "Mealie Meal": 150,
+  "Gas 19kg 2": 855,
+  "Other Fees": 1,
+  "Withdrawal Charges": 1
+};
+
+    const dropdownValues = [""].concat(
+      Array.from({ length: 35 }, (_, i) => i + 1),
+      [50, 60, 75, 100]
+    );
+
+    const storageOptions = [
+      "Plain papers", "25kg Crown Flour", "1Kg Sugar", "Baking Powder",
+      "5 Ltr Cooking Oil", "2 Ltr Tomatoe Sauce", "1 Ltr Masturd", "1 Ltr Vinegar",
+      "2 Ltr Chili", "Chicken Spice 1kg", "Ginger Powder 1kg", "4 Orange Food Color",
+      "Shawarma Spice 1kg", "Shawarma Papers", "Carrier Bags", "Boom/Soap",
+      "Serviettes", "Plastic Gloves", "Fresh Garlic", "Eggs", "Platter parks",
+      "Salt Satchets", "Cooking Cylinder Gas", "Cooking Salt", "Mealie Meal",
+      "Gas 19kg 2", "Other Fees", "Withdrawal Charges"
+    ];
+
+    items.forEach(id => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "tight-group";
+
+      let labelElement = "";
+      if (id.startsWith("storageItem")) {
+        const index = parseInt(id.replace("storageItem", "")) || 0;
+        const placeholder = `Stock Item ${index}`;
+        labelElement = `
+          <select id="label-${id}" name="label-${id}" class="storage-label">
+            <option value="">-- ${placeholder} --</option>
+            ${storageOptions.map(val => `<option value="${val}">${val}</option>`).join("")}
+          </select>`;
+      } else {
+        labelElement = `<label for="${id}">${formatLabel(id)}:</label>`;
+      }
+
+      const inputElement = `
+        <select id="${id}" name="${id}" class="item-value">
+          ${dropdownValues.map(val => `<option value="${val}">${val}</option>`).join("")}
+        </select>`;
+
+      const outputId = `${id}Total`;
+      wrapper.innerHTML = `
+        <div class="form-group">
+          ${labelElement}
+          ${inputElement}
+          <div class="output-box" id="${outputId}">K0.00</div>
+        </div>
+      `;
+      captureArea.appendChild(wrapper);
+
+      const input = document.getElementById(id);
+      input.addEventListener("change", () => {
+        const val = parseFloat(input.value) || 0;
+        document.getElementById(outputId).textContent = formatCurrency(val);
+        updateTotalStock();
+      });
+
+      if (id.startsWith("storageItem")) {
+        const labelInput = document.getElementById(`label-${id}`);
+        labelInput.addEventListener("change", updateTotalStock);
+      }
+    });
+
+    function formatLabel(id) {
+      const map = {
+        chickensBought: "Chickens",
+        potatoesBought: "Potatoes",
+        oniontomatoBought: "Onion/Tom",
+        lettuceBought: "Lettuce",
+        cucumbersBought: "Cucumbers",
+        Transport: "Transport",
+        storageItem1: "Stk Item 1",
+        storageItem2: "Stk Item 2",
+        storageItem3: "Stk Item 3",
+        storageItem4: "Stk Item 4",
+        storageItem5: "Stk Item 5",
+        storageItem6: "Stk Item 6"
+      };
+      return map[id] || id;
+    }
+
+    function saveData() {
+  const data = {};
+  items.forEach(id => {
+    data[id] = getVal(id);
+    if (id.startsWith("storageItem")) {
+      const label = getVal(`label-${id}`);
+      data[`label-${id}`] = label;
+      const total = document.getElementById(`${id}Total`)?.textContent || "K0.00";
+      data[`${id}Total`] = total;
+    } else {
+      const total = document.getElementById(`${id}Total`)?.textContent || "K0.00";
+      data[`${id}Total`] = total;
+    }
+  });
+  data.totalStock = document.getElementById("totalStockBox")?.textContent || "K0.00";
+
+  const jsonBlob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(jsonBlob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "kaspataste_budget_data.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+    function loadData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      items.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = data[id] || "";
+
+        const totalEl = document.getElementById(`${id}Total`);
+        if (totalEl) totalEl.textContent = data[`${id}Total`] || "K0.00";
+
+        if (id.startsWith("storageItem")) {
+          const labelInput = document.getElementById(`label-${id}`);
+          if (labelInput) labelInput.value = data[`label-${id}`] || "";
+        }
+      });
+
+      // Restore total stock
+      document.getElementById("totalStockBox").textContent = data.totalStock || "K0.00";
+    } catch (err) {
+      alert("Invalid JSON file.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+    function getVal(id) {
+      return document.getElementById(id)?.value || "";
+    }
+
+    function clearFields() {
+      items.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = "";
+        if (id.startsWith("storageItem")) {
+          const labelInput = document.getElementById(`label-${id}`);
+          if (labelInput) labelInput.value = "";
+        }
+        const display = document.getElementById(id + "Total");
+        if (display) display.textContent = formatCurrency(0);
+      });
+      document.getElementById("totalStockBox").textContent = formatCurrency(0);
+    }
+
+    function updateTotalStock() {
+  let total = 0;
+
+  items.forEach(id => {
+    const quantity = parseFloat(document.getElementById(id)?.value || 0);
+    let unitPrice = 0;
+
+    if (id.startsWith("storageItem")) {
+      const label = document.getElementById(`label-${id}`)?.value || "";
+      unitPrice = unitPrices[label] || 0;
+    } else {
+      unitPrice = unitPrices[id] || 0;
+    }
+
+    const itemTotal = quantity * unitPrice;
+    total += itemTotal;
+
+    const output = document.getElementById(`${id}Total`);
+    if (output) output.textContent = formatCurrency(itemTotal);
+  });
+
+  document.getElementById("totalStockBox").textContent = formatCurrency(total);
+}
+
+function formatCurrency(num) {
+  return "K" + num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, "$&,");
+}
+
+    function saveAsJPG() {
+      html2canvas(document.getElementById("captureArea"), {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: "#d5e9ef"
+      }).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "kaspataste_budget_data.jpg";
+        link.href = canvas.toDataURL("image/jpeg", 1.0);
+        link.click();
+      });
+    }
+	
+	function copyTextSummary() {
+  let summary = "";
+
+  items.forEach(id => {
+    let label = "";
+    let total = document.getElementById(`${id}Total`)?.textContent || "K0.00";
+
+    // Only process if value is greater than K0.00
+    const numericValue = parseFloat(total.replace(/[K,]/g, ""));
+    if (numericValue <= 0) return;
+
+    if (id.startsWith("storageItem")) {
+      label = document.getElementById(`label-${id}`)?.selectedOptions[0]?.textContent.trim() || "";
+    } else {
+      const labelEl = document.querySelector(`label[for="${id}"]`);
+      label = labelEl?.textContent.trim().replace(":", "") || id;
+    }
+
+    summary += `${label} ${total}\n`;
+  });
+
+  const totalStock = document.getElementById("totalStockBox")?.textContent || "K0.00";
+  if (parseFloat(totalStock.replace(/[K,]/g, "")) > 0) {
+    summary += `Total Stock ${totalStock}`;
+  }
+
+  navigator.clipboard.writeText(summary)
+    .then(() => alert("Summary copied to clipboard!"))
+    .catch(() => alert("Failed to copy summary."));
+}
+
+  </script>
+</body>
+</html>
